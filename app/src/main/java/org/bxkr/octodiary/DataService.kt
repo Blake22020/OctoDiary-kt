@@ -294,6 +294,12 @@ object DataService {
 
         var rankingFinished = false
         var classMembersFinished = false
+        val onRankingUnavailable = {
+            ranking = emptyList()
+            hasRanking = true
+            rankingFinished = true
+            if (classMembersFinished) onUpdated()
+        }
 
         // Ranking request:
         secondaryApi.classRanking(
@@ -301,17 +307,18 @@ object DataService {
             personId = profile.children[currentProfile].contingentGuid,
             date = Date().formatToDay()
         ).baseEnqueue({ errorBody: ResponseBody, httpCode: Int, className: String? ->
-            val errorText = errorBody.string()
-
-            if (errorText.contains("Рейтинг не доступен.")) {
-                ranking = emptyList()
-                hasRanking = true
-                rankingFinished = true
-                if (classMembersFinished) onUpdated()
-            } else {
+            val errorText = runCatching { errorBody.string() }
+                .getOrElse { "response body was already read" }
+            if (httpCode in listOf(401, 403)) {
                 baseErrorFunction(errorBody, httpCode, className)
+            } else {
+                println("Optional ranking request failed in $className: $errorText")
+                onRankingUnavailable()
             }
-        }, ::baseInternalExceptionFunction) {
+        }, { throwable, className ->
+            println("Optional ranking request failed in $className: ${throwable.message}")
+            onRankingUnavailable()
+        }) {
             ranking = it
             hasRanking = true
             rankingFinished = true
@@ -361,22 +368,29 @@ object DataService {
     fun updateSubjectRanking(onUpdated: () -> Unit) {
         assert(this::token.isInitialized)
         assert(this::profile.isInitialized)
+        val onRankingUnavailable = {
+            subjectRanking = emptyList()
+            hasSubjectRanking = true
+            onUpdated()
+        }
 
         secondaryApi.subjectRanking(
             token,
             profile.children[currentProfile].contingentGuid,
             Date().formatToDay()
         ).baseEnqueue({ errorBody: ResponseBody, httpCode: Int, className: String? ->
-            val errorText = errorBody.string()
-
-            if (errorText.contains("Рейтинг не доступен.")) {
-                subjectRanking = emptyList()
-                hasSubjectRanking = true
-                onUpdated()
-            } else {
+            val errorText = runCatching { errorBody.string() }
+                .getOrElse { "response body was already read" }
+            if (httpCode in listOf(401, 403)) {
                 baseErrorFunction(errorBody, httpCode, className)
+            } else {
+                println("Optional subject ranking request failed in $className: $errorText")
+                onRankingUnavailable()
             }
-        }, ::baseInternalExceptionFunction) {
+        }, { throwable, className ->
+            println("Optional subject ranking request failed in $className: ${throwable.message}")
+            onRankingUnavailable()
+        }) {
             subjectRanking = it
             hasSubjectRanking = true
             onUpdated()
@@ -581,15 +595,21 @@ object DataService {
     fun updateAvatars(onUpdated: () -> Unit) {
         require(this::token.isInitialized)
         require(this::profile.isInitialized)
+        val onAvatarsUnavailable = {
+            avatars = emptyList()
+            hasAvatars = true
+            onUpdated()
+        }
 
         secondaryApi.avatars(
             "Bearer $token",
             profile.children[currentProfile].contingentGuid
         ).baseEnqueue({ _, _, _ ->
-            avatars = emptyList()
-            hasAvatars = true
-            onUpdated()
-        }, ::baseInternalExceptionFunction) {
+            onAvatarsUnavailable()
+        }, { throwable, className ->
+            println("Optional avatars request failed in $className: ${throwable.message}")
+            onAvatarsUnavailable()
+        }) {
             avatars = it
             hasAvatars = true
             onUpdated()

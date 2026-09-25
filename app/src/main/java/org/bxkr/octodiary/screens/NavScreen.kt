@@ -254,6 +254,7 @@ fun NavScreen(modifier: Modifier, pinFinished: MutableState<Boolean>) {
                         ) {
                             Text("Не удалось загрузить данные")
                             Text("Проверьте подключение к интернету и попробуйте ещё раз.")
+                            Text("Подробности: ${DataService.loadError.value ?: "неизвестная ошибка"}")
                             FilledTonalButton(onClick = {
                                 progress = 0f
                                 if (isDemo) {

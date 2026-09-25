@@ -271,7 +271,7 @@ fun DataService.baseErrorFunction(errorBody: ResponseBody, httpCode: Int, classN
 
 fun DataService.baseInternalExceptionFunction(t: Throwable, className: String?) {
     println("Error in $className: ${t.message}")
-    handleUpdateAllFailure(t.message ?: "Request failed in $className")
+    handleUpdateAllFailure("${className ?: "Network request"}: ${t.javaClass.simpleName}")
 }
 
 /** Formats [Date] to yyyy-MM-dd format [String] **/

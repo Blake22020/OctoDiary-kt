@@ -133,6 +133,8 @@
     <string name="log_in_on_mosru">Войти на mos.ru</string>
     <string name="or">или</string>
     <string name="exchanging_code_to_token">Меняю код на токен…</string>
+    <string name="token_exchange_failed">Не удалось завершить вход: %1$s</string>
+    <string name="return_to_login">Вернуться ко входу</string>
     <string name="mes">МЭШ</string>
     <string name="myschool">Моя Школа</string>
     <string name="log_in_on_gosuslugi">Войти через Госуслуги</string>

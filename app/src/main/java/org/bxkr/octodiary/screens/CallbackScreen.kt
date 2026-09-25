@@ -7,10 +7,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -29,10 +32,11 @@ import java.util.Date
 @Composable
 fun CallbackScreen(code: String, type: CallbackType, subsystem: Int?) {
     val hasToken: MutableState<Boolean> = remember { mutableStateOf(false) }
+    var exchangeError by remember(code, type) { mutableStateOf<String?>(null) }
 
-    if (!hasToken.value) {
+    if (!hasToken.value && exchangeError == null) {
         when (type) {
-            CallbackType.MosRu -> MosExchangeToken(code, hasToken)
+            CallbackType.MosRu -> MosExchangeToken(code, hasToken) { exchangeError = it }
             CallbackType.Esia -> EsiaExchangeToken(code, hasToken)
             CallbackType.TgBot -> {
                 if (subsystem != null) {
@@ -56,8 +60,21 @@ fun CallbackScreen(code: String, type: CallbackType, subsystem: Int?) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             if (!hasToken.value) {
-                Text(text = stringResource(R.string.exchanging_code_to_token), modifier = Modifier.padding(16.dp))
-                CircularProgressIndicator()
+                if (exchangeError == null) {
+                    Text(
+                        text = stringResource(R.string.exchanging_code_to_token),
+                        modifier = Modifier.padding(16.dp)
+                    )
+                    CircularProgressIndicator()
+                } else {
+                    Text(
+                        text = stringResource(R.string.token_exchange_failed, exchangeError!!),
+                        modifier = Modifier.padding(16.dp)
+                    )
+                    TextButton(onClick = { screenLive.value = Screen.Login }) {
+                        Text(stringResource(R.string.return_to_login))
+                    }
+                }
 
             } else {
                 screenLive.value = Screen.MainNav

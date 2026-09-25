@@ -201,8 +201,15 @@ inline fun <reified T> Call<T>.baseEnqueue(
         if (response.isSuccessful && body != null) {
             function(body)
         } else {
-            response.errorBody()
-                ?.let { it1 -> errorFunction(it1, response.code(), T::class.simpleName) }
+            val errorBody = response.errorBody()
+            if (errorBody != null) {
+                errorFunction(errorBody, response.code(), T::class.simpleName)
+            } else {
+                noConnectionFunction(
+                    IllegalStateException("HTTP ${response.code()} returned an empty response"),
+                    T::class.simpleName
+                )
+            }
         }
     }
 

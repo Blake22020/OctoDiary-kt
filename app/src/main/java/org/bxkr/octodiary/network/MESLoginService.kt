@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Log
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalContext
@@ -30,6 +31,7 @@ import org.bxkr.octodiary.network.interfaces.SchoolSessionAPI
 import org.bxkr.octodiary.save
 import org.bxkr.octodiary.widget.StatusWidget.Companion.setUpdateFor
 import java.util.Date
+import java.util.concurrent.TimeUnit
 
 object MESLoginService {
     fun logInWithMosRu(context: Context) {
@@ -75,26 +77,48 @@ object MESLoginService {
     }
 
     @Composable
-    fun MosExchangeToken(code: String, hasToken: MutableState<Boolean>) {
+    fun MosExchangeToken(
+        code: String,
+        hasToken: MutableState<Boolean>,
+        onError: (String) -> Unit,
+    ) {
         val context = LocalContext.current
-        context.getSharedPreferences("auth", Context.MODE_PRIVATE).apply {
-            val codeVerifier = getString("code_verifier", "")!!
-            val clientId = getString("client_id", "")
-            val clientSecret = getString("client_secret", "")
+        LaunchedEffect(code) {
+            context.getSharedPreferences("auth", Context.MODE_PRIVATE).apply {
+                val codeVerifier = getString("code_verifier", "")!!
+                val clientId = getString("client_id", "")
+                val clientSecret = getString("client_secret", "")
 
-            val authorization = encodeToBase64("$clientId:$clientSecret".toByteArray())
-            val authHeader = "Basic $authorization"
+                val authorization = encodeToBase64("$clientId:$clientSecret".toByteArray())
+                val authHeader = "Basic $authorization"
 
-            val exchangeCall = NetworkService.mosAuthApi().tokenExchange(
-                grantType = MESAPIConfig.GRANT_TYPE_CODE,
-                redirectUri = MESAPIConfig.REDIRECT_URI,
-                code,
-                codeVerifier,
-                authHeader
-            )
-            exchangeCall.baseEnqueue { body ->
-                context.authPrefs.save("mos_refresh_token" to body.refreshToken)
-                mosToMesToken(context, mosToken = body.accessToken, hasToken)
+                val exchangeCall = NetworkService.mosAuthApi().tokenExchange(
+                    grantType = MESAPIConfig.GRANT_TYPE_CODE,
+                    redirectUri = MESAPIConfig.REDIRECT_URI,
+                    code,
+                    codeVerifier,
+                    authHeader
+                )
+                exchangeCall.timeout().timeout(30, TimeUnit.SECONDS)
+                exchangeCall.baseEnqueue(
+                    errorFunction = { _, httpCode, className ->
+                        onError("HTTP $httpCode in ${className ?: "token exchange"}")
+                    },
+                    noConnectionFunction = { throwable, className ->
+                        onError(
+                            "${className ?: "Token exchange"}: " +
+                                (throwable.message ?: throwable.javaClass.simpleName)
+                        )
+                    }
+                ) { body ->
+                    context.authPrefs.save("mos_refresh_token" to body.refreshToken)
+                    mosToMesToken(
+                        context,
+                        mosToken = body.accessToken,
+                        hasToken = hasToken,
+                        onError = onError
+                    )
+                }
             }
         }
     }
@@ -104,6 +128,7 @@ object MESLoginService {
         mosToken: String,
         hasToken: MutableState<Boolean> = mutableStateOf(false),
         onSet: () -> Unit = {},
+        onError: (String) -> Unit = {},
     ) {
         val schoolAuthCall =
             NetworkService.schoolSessionApi(SchoolSessionAPI.getBaseUrl(Diary.MES)).mosTokenToMes(
@@ -113,7 +138,18 @@ object MESLoginService {
                     )
                 )
             )
-        schoolAuthCall.baseEnqueue { body ->
+        schoolAuthCall.timeout().timeout(30, TimeUnit.SECONDS)
+        schoolAuthCall.baseEnqueue(
+            errorFunction = { _, httpCode, className ->
+                onError("HTTP $httpCode in ${className ?: "MES token exchange"}")
+            },
+            noConnectionFunction = { throwable, className ->
+                onError(
+                    "${className ?: "MES token exchange"}: " +
+                        (throwable.message ?: throwable.javaClass.simpleName)
+                )
+            }
+        ) { body ->
             body.userAuthenticationForMobileResponse.meshAccessToken.also { token ->
                 context.authPrefs.save(
                     "auth" to true,

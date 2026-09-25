@@ -311,7 +311,7 @@ interface MainSchoolAPI {
 
 
     @MESOnly
-    @GET("meals/v2/clients")
+    @GET("meals/v1/clients")
     fun mealBalance(
         @Header("authorization") authorization: String,
         @Header("auth-token") accessToken: String,

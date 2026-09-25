@@ -203,7 +203,14 @@ fun NavScreen(modifier: Modifier, pinFinished: MutableState<Boolean>) {
                         cachePrefs.save(
                             name to Gson().toJson(
                                 DataService::class.java.getDeclaredField(name).get(DataService)
-                            ), "age" to System.currentTimeMillis()
+                            )
+                        )
+                    }
+                    DataService.onUpdateAllCompletedHandler = {
+                        cachePrefs.save(
+                            "cache_version" to DataService.CACHE_VERSION,
+                            "cache_subsystem" to DataService.subsystem.ordinal,
+                            "age" to System.currentTimeMillis()
                         )
                     }
 
@@ -212,31 +219,66 @@ fun NavScreen(modifier: Modifier, pinFinished: MutableState<Boolean>) {
                         activity.logOut("Performed from token expiration handler")
                     }
 
-                    if (!DataService.loadingStarted) {
-                        if (cachePrefs.get<Long>("age")
-                                ?.let { (System.currentTimeMillis() - it) < 86400000 } == true
+                    if (!DataService.loadingStarted && DataService.loadError.value == null) {
+                        val cacheIsFresh =
+                            cachePrefs.get<Int>("cache_version") == DataService.CACHE_VERSION &&
+                                cachePrefs.get<Int>("cache_subsystem") ==
+                                    DataService.subsystem.ordinal &&
+                                cachePrefs.get<Long>("age")?.let {
+                                    System.currentTimeMillis() - it in 0L until 86400000L
+                                } == true
+                        if (cacheIsFresh && DataService.loadFromCache {
+                                cachePrefs.get<String>(it) ?: ""
+                            }
                         ) {
                             DataService.loadingStarted = true
-                            DataService.subsystem =
-                                Diary.values()[authPrefs.get<Int>("subsystem") ?: 0]
-                            DataService.loadFromCache { cachePrefs.get<String>(it) ?: "" }
+                            DataService.loadError.value = null
                             DataService.loadedEverything.value = true
                         } else if (isDemo) {
                             DataService.subsystem = Diary.MES
-                            DataService.run { loadDemoCache() }
-                            DataService.loadedEverything.value = true
+                            if (DataService.run { loadDemoCache() }) {
+                                DataService.loadingStarted = true
+                                DataService.loadedEverything.value = true
+                            } else {
+                                DataService.loadError.value = "Demo data is incomplete"
+                            }
                         } else {
                             DataService.updateAll(context)
                         }
                     }
-                    Column(
-                        Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        LinearProgressIndicator(
-                            progress = { progressAnimated },
-                        )
+                    if (DataService.loadError.value != null) {
+                        Column(
+                            Modifier.fillMaxSize().padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text("Не удалось загрузить данные")
+                            Text("Проверьте подключение к интернету и попробуйте ещё раз.")
+                            FilledTonalButton(onClick = {
+                                progress = 0f
+                                if (isDemo) {
+                                    if (DataService.run { loadDemoCache() }) {
+                                        DataService.loadingStarted = true
+                                        DataService.loadError.value = null
+                                        DataService.loadedEverything.value = true
+                                    }
+                                } else {
+                                    DataService.updateAll(context)
+                                }
+                            }) {
+                                Text("Повторить")
+                            }
+                        }
+                    } else {
+                        Column(
+                            Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            LinearProgressIndicator(
+                                progress = { progressAnimated },
+                            )
+                        }
                     }
                 }
                 screenLive.value = Screen.MainNav

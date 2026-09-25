@@ -259,14 +259,19 @@ inline fun <reified T> Call<T>.extendedEnqueue(
 
 fun DataService.baseErrorFunction(errorBody: ResponseBody, httpCode: Int, className: String?) {
     if (httpCode in listOf(401, 403)) {
+        handleUpdateAllFailure("Authorization failed with HTTP $httpCode")
         tokenExpirationHandler?.invoke()
-    } else println("Error in $className: ${errorBody.string()}")
+    } else {
+        val errorMessage = runCatching { errorBody.string() }
+            .getOrElse { "response body was already read" }
+        println("Error in $className: $errorMessage")
+        handleUpdateAllFailure("HTTP $httpCode in $className")
+    }
 }
 
 fun DataService.baseInternalExceptionFunction(t: Throwable, className: String?) {
-    println("Error in $className:\n    ${t.message}\nTrying to reload everything...")
-    loadingStarted = false
-    updateAll()
+    println("Error in $className: ${t.message}")
+    handleUpdateAllFailure(t.message ?: "Request failed in $className")
 }
 
 /** Formats [Date] to yyyy-MM-dd format [String] **/

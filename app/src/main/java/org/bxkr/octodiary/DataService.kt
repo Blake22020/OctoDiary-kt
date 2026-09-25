@@ -36,6 +36,8 @@ import java.util.Calendar
 import java.util.Date
 
 object DataService {
+    const val CACHE_VERSION = 1
+
     lateinit var subsystem: Diary
     lateinit var mainSchoolApi: MainSchoolAPI
     lateinit var dSchoolApi: DSchoolAPI
@@ -177,12 +179,16 @@ object DataService {
     ).mapKeys { it.key.name }
 
     val loadedEverything = mutableStateOf(false)
+    val loadError = mutableStateOf<String?>(null)
 
     var tokenExpirationHandler: (() -> Unit)? = null
 
     var onSingleItemInUpdateAllLoadedHandler: ((name: String, progress: Float) -> Unit)? = null
+    var onUpdateAllCompletedHandler: (() -> Unit)? = null
 
     var loadingStarted = false
+    private var updateGeneration = 0L
+    private var updateInProgress = false
 
     var currentProfile = 0
 
@@ -191,6 +197,7 @@ object DataService {
         dSchoolApi.profilesId(token)
             .baseEnqueue(::baseErrorFunction, ::baseInternalExceptionFunction) { body ->
                 if (body.size == 0) {
+                    handleUpdateAllFailure("No profile is associated with this token")
                     tokenExpirationHandler?.invoke()
                 } else {
                     userId = body
@@ -369,7 +376,7 @@ object DataService {
             } else {
                 baseErrorFunction(errorBody, httpCode, className)
             }
-        }) {
+        }, ::baseInternalExceptionFunction) {
             subjectRanking = it
             hasSubjectRanking = true
             onUpdated()
@@ -393,7 +400,7 @@ object DataService {
         assert(subsystem == Diary.MES)
 
         val localContractId = contractId
-        if (localContractId != null)
+        if (localContractId != null) {
             mainSchoolApi.visits(
                 token,
                 localContractId,
@@ -411,6 +418,11 @@ object DataService {
                 hasVisits = true
                 onUpdated()
             }
+        } else {
+            visits = VisitsResponse(emptyList())
+            hasVisits = true
+            onUpdated()
+        }
     }
 
     fun updateMarksDate(onUpdated: () -> Unit) {
@@ -577,7 +589,7 @@ object DataService {
             avatars = emptyList()
             hasAvatars = true
             onUpdated()
-        }) {
+        }, ::baseInternalExceptionFunction) {
             avatars = it
             hasAvatars = true
             onUpdated()
@@ -713,16 +725,32 @@ object DataService {
 
     fun updateAll(context: Context? = null) {
         if (loadingStarted) return else loadingStarted = true
+        val generation = ++updateGeneration
+        var completed = false
+        updateInProgress = true
+        loadError.value = null
+        loadedEverything.value = false
+        context?.cachePrefs?.save(
+            "age" to null,
+            "cache_version" to null,
+            "cache_subsystem" to null
+        )
         // ADD_NEW_FIELD_HERE
         states.forEach { it.set(false) }
         val onSingleItemLoad = { name: String ->
-            val statesInit = states.map { it.get() }
-            onSingleItemInUpdateAllLoadedHandler?.invoke(name, (statesInit.count { it }
-                .toFloat()) / (statesInit.size.toFloat()))
-            if (!(statesInit.contains(false))) {
-                loadedEverything.value = true
+            if (generation == updateGeneration) {
+                val statesInit = states.map { it.get() }
+                onSingleItemInUpdateAllLoadedHandler?.invoke(name, (statesInit.count { it }
+                    .toFloat()) / (statesInit.size.toFloat()))
+                if (!statesInit.contains(false) && !completed) {
+                    completed = true
+                    onUpdateAllCompletedHandler?.invoke()
+                    updateInProgress = false
+                    loadError.value = null
+                    loadedEverything.value = true
+                }
+                println("$name response is loaded, $statesInit")
             }
-            println("$name response is loaded, $statesInit")
         }
         if (context != null) {
             refreshToken(context) {}
@@ -765,11 +793,34 @@ object DataService {
         }
     }
 
-    fun loadFromCache(get: (String) -> String) {
-        fields.map { it.name }.forEachIndexed { index, it ->
-            javaClass.getDeclaredField(it)
-                .set(this, Gson().fromJson(get(it), javaClass.getDeclaredField(it).genericType))
-            states[index].set(true)
+    internal fun handleUpdateAllFailure(message: String) {
+        if (!updateInProgress) return
+
+        updateGeneration++
+        updateInProgress = false
+        loadingStarted = false
+        loadedEverything.value = false
+        loadError.value = message
+    }
+
+    fun loadFromCache(get: (String) -> String): Boolean {
+        return try {
+            val cachedFields = fields.map { property ->
+                val field = javaClass.getDeclaredField(property.name)
+                val json = get(property.name)
+                require(json.isNotBlank()) { "Cache entry ${property.name} is missing" }
+                val value = Gson().fromJson<Any?>(json, field.genericType)
+                requireNotNull(value) { "Cache entry ${property.name} is empty" }
+                field to value
+            }
+            require(cachedFields.size == states.size) { "Cache schema is inconsistent" }
+
+            cachedFields.forEach { (field, value) -> field.set(this, value) }
+            states.forEach { it.set(true) }
+            true
+        } catch (exception: Exception) {
+            println("Cached data is incomplete or invalid: ${exception.message}")
+            false
         }
     }
 

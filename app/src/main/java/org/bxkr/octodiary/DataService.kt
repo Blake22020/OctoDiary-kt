@@ -539,6 +539,13 @@ object DataService {
         assert(this::token.isInitialized)
         assert(this::profile.isInitialized)
 
+        fun useEmptyDaysBalanceInfo(reason: String) {
+            println("DaysBalanceInfo unavailable: $reason")
+            daysBalanceInfo = DaysBalanceInfo(emptyList(), false)
+            daysBalanceInfoCompleted = true
+            onSingleItemInUpdateAllLoadedHandler?.invoke("daysBalanceInfo", 100f)
+        }
+
         daysBalanceInfo = DaysBalanceInfo(emptyList(), false)
         hasDaysBalanceInfo = true
         daysBalanceInfoCompleted = false
@@ -550,7 +557,17 @@ object DataService {
             from = "${Date().formatToDay()}T00:00:00.000Z",
             withPayments = false,
             limit = Int.MAX_VALUE
-        ).baseEnqueue(::baseErrorFunction, ::baseInternalExceptionFunction) {
+        ).baseEnqueue({ errorBody, httpCode, className ->
+            if (httpCode == 401 || httpCode == 403) {
+                baseErrorFunction(errorBody, httpCode, className)
+            } else {
+                val details = runCatching { errorBody.string() }
+                    .getOrElse { "response body was already read" }
+                useEmptyDaysBalanceInfo("HTTP $httpCode: $details")
+            }
+        }, { throwable, className ->
+            useEmptyDaysBalanceInfo("${className ?: "Network request"}: ${throwable.message}")
+        }) {
             daysBalanceInfo = it
             daysBalanceInfoCompleted = true
             onSingleItemInUpdateAllLoadedHandler?.invoke("daysBalanceInfo", 100f)

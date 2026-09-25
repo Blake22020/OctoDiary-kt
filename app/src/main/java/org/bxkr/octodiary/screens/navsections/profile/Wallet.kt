@@ -52,10 +52,12 @@ fun Wallet() {
     val isDemo = LocalContext.current.isDemo
 
     LaunchedEffect(Unit) {
-        if (topUps == null && !isDemo) DataService.getBalanceHistory {
+        if (balance.localUnavailable || isDemo) {
+            isLoadingLive.value = false
+        } else if (topUps == null) DataService.getBalanceHistory {
             topUpsLive.value = it
             isLoadingLive.value = false
-        } else if (isDemo) isLoadingLive.value = false
+        }
     }
 
     Box(
@@ -65,15 +67,19 @@ fun Wallet() {
     ) {
         Column {
             Text(stringResource(R.string.wallet), style = MaterialTheme.typography.titleMedium)
-            NameAndValueText(
-                stringResource(R.string.balance),
-                stringResource(R.string.balance_t, (balance.balance / 100f).toString())
-            )
-            NameAndValueText(
-                stringResource(R.string.account_number),
-                balance.clientId.contractId.toString()
-            ) {
-                clipboardManager.setText(AnnotatedString(balance.clientId.contractId.toString()))
+            if (balance.localUnavailable) {
+                Text(stringResource(R.string.meal_balance_unavailable))
+            } else {
+                NameAndValueText(
+                    stringResource(R.string.balance),
+                    stringResource(R.string.balance_t, (balance.balance / 100f).toString())
+                )
+                NameAndValueText(
+                    stringResource(R.string.account_number),
+                    balance.clientId.contractId.toString()
+                ) {
+                    clipboardManager.setText(AnnotatedString(balance.clientId.contractId.toString()))
+                }
             }
             Spacer(Modifier.size(16.dp))
             LazyColumn(

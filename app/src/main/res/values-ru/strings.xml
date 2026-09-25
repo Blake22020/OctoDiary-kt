@@ -160,6 +160,7 @@
     <string name="hello_t">Привет, %1$s!</string>
     <string name="class_t">Класс %1$s</string>
     <string name="balance_t">%1$s ₽</string>
+    <string name="meal_balance_unavailable">Баланс питания недоступен</string>
     <string name="personal_data">Личные данные</string>
     <string name="class_label">Класс</string>
     <string name="meal">Еда</string>

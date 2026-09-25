@@ -16,7 +16,9 @@ import org.bxkr.octodiary.models.lesson2.LessonResponse
 import org.bxkr.octodiary.models.mark.MarkInfo
 import org.bxkr.octodiary.models.marklistdate.MarkListDate
 import org.bxkr.octodiary.models.marklistsubject.MarkListSubjectItem
+import org.bxkr.octodiary.models.mealbalance.ClientId
 import org.bxkr.octodiary.models.mealbalance.MealBalance
+import org.bxkr.octodiary.models.mealbalance.Organization
 import org.bxkr.octodiary.models.mealsmenucomplexes.MealsMenuComplexes
 import org.bxkr.octodiary.models.persondata.PersonData
 import org.bxkr.octodiary.models.profile.ProfileResponse
@@ -413,6 +415,13 @@ object DataService {
         assert(this::profile.isInitialized)
         assert(subsystem == Diary.MES)
 
+        fun onVisitsUnavailable(reason: String) {
+            println("Visits unavailable: $reason")
+            visits = VisitsResponse(emptyList())
+            hasVisits = true
+            onUpdated()
+        }
+
         val localContractId = contractId
         if (localContractId != null) {
             mainSchoolApi.visits(
@@ -423,7 +432,17 @@ object DataService {
                     set(Calendar.DAY_OF_YEAR, get(Calendar.DAY_OF_YEAR) - 61)
                 }.time.formatToDay(),
                 toDate = Date().formatToDay()
-            ).baseEnqueue(::baseErrorFunction, ::baseInternalExceptionFunction) { visitsResponse ->
+            ).baseEnqueue({ errorBody, httpCode, className ->
+                if (httpCode == 401 || httpCode == 403) {
+                    baseErrorFunction(errorBody, httpCode, className)
+                } else {
+                    val details = runCatching { errorBody.string() }
+                        .getOrElse { "response body was already read" }
+                    onVisitsUnavailable("HTTP $httpCode: $details")
+                }
+            }, { throwable, className ->
+                onVisitsUnavailable("${className ?: "Network request"}: ${throwable.message}")
+            }) { visitsResponse ->
                 visits = VisitsResponse(
                     payload = visitsResponse.payload.sortedByDescending {
                         it.date.parseFromDay().toInstant().toEpochMilli()
@@ -496,11 +515,39 @@ object DataService {
         assert(this::profile.isInitialized)
         assert(subsystem == Diary.MES)
 
+        fun onMealBalanceUnavailable(reason: String) {
+            println("MealBalance unavailable: $reason")
+            val child = profile.children[currentProfile]
+            contractId = child.contractId.asLongOrNull()
+                ?: profile.profile.contractId.asLongOrNull()
+            mealBalance = MealBalance(
+                balance = 0,
+                clientId = ClientId(contractId ?: 0L, child.contingentGuid, null),
+                foodboxAllowed = false,
+                foodboxAvailable = false,
+                organization = Organization("", "", ""),
+                preorderAllowed = false,
+                localUnavailable = true
+            )
+            hasMealBalance = true
+            onUpdated()
+        }
+
         mainSchoolApi.mealBalance(
             "Bearer $token",
             token,
             personId = profile.children[currentProfile].contingentGuid
-        ).baseEnqueue(::baseErrorFunction, ::baseInternalExceptionFunction) {
+        ).baseEnqueue({ errorBody, httpCode, className ->
+            if (httpCode == 401 || httpCode == 403) {
+                baseErrorFunction(errorBody, httpCode, className)
+            } else {
+                val details = runCatching { errorBody.string() }
+                    .getOrElse { "response body was already read" }
+                onMealBalanceUnavailable("HTTP $httpCode: $details")
+            }
+        }, { throwable, className ->
+            onMealBalanceUnavailable("${className ?: "Network request"}: ${throwable.message}")
+        }) {
             mealBalance = it
             contractId = it.clientId.contractId
             hasMealBalance = true
@@ -578,11 +625,28 @@ object DataService {
         assert(this::token.isInitialized)
         assert(this::profile.isInitialized)
 
+        fun onMealsMenuUnavailable(reason: String) {
+            println("MealsMenuComplexes unavailable: $reason")
+            mealsMenuComplexes = MealsMenuComplexes()
+            hasMealsMenuComplexes = true
+            onUpdated()
+        }
+
         mainSchoolApi.mealsMenuComplexes(
             accessToken = token,
             personId = profile.children[currentProfile].contingentGuid,
             onDate = Date().formatToDay()
-        ).baseEnqueue(::baseErrorFunction, ::baseInternalExceptionFunction) {
+        ).baseEnqueue({ errorBody, httpCode, className ->
+            if (httpCode == 401 || httpCode == 403) {
+                baseErrorFunction(errorBody, httpCode, className)
+            } else {
+                val details = runCatching { errorBody.string() }
+                    .getOrElse { "response body was already read" }
+                onMealsMenuUnavailable("HTTP $httpCode: $details")
+            }
+        }, { throwable, className ->
+            onMealsMenuUnavailable("${className ?: "Network request"}: ${throwable.message}")
+        }) {
             mealsMenuComplexes = it
             hasMealsMenuComplexes = true
             onUpdated()
@@ -870,4 +934,10 @@ object DataService {
             ).bufferedReader(Charsets.UTF_8).use { it.readText() }
         }
 
+}
+
+private fun Any?.asLongOrNull(): Long? = when (this) {
+    is Number -> toLong()
+    is String -> toLongOrNull()
+    else -> null
 }

@@ -15,5 +15,7 @@ data class MealBalance(
     @SerializedName("organization")
     val organization: Organization,
     @SerializedName("preorderAllowed")
-    val preorderAllowed: Boolean
+    val preorderAllowed: Boolean,
+    @SerializedName("_octodiary_unavailable")
+    val localUnavailable: Boolean = false
 )

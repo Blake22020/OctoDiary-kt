@@ -212,6 +212,7 @@
     <string name="hello_t">Hello, %1$s!</string>
     <string name="class_t">Class %1$s</string>
     <string name="balance_t">%1$s rubles</string>
+    <string name="meal_balance_unavailable">Meal balance is unavailable</string>
     <string name="personal_data">Personal data</string>
     <string name="class_label">Class</string>
     <string name="meal">Meal</string>

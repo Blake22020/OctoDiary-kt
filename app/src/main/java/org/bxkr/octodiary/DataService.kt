@@ -64,6 +64,12 @@ object DataService {
 
     lateinit var classMembers: List<ClassMember>
     var hasClassMembers = false
+    private var classMembersNamesLoaded = false
+    private var classMembersNamesRequestInFlight = false
+    private var classMembersNamesStudentId: Long? = null
+    private var classMembersNamesRequestStudentId: Long? = null
+    private var classMembersNamesRequestGeneration = 0
+    private val classMembersNamesWaiters = mutableListOf<Pair<(String) -> Unit, () -> Unit>>()
 
     lateinit var subjectRanking: List<SubjectRanking>
     var hasSubjectRanking = false
@@ -343,6 +349,79 @@ object DataService {
 //            classMembersFinished = true
 //            if (rankingFinished) onUpdated()
 //        }
+    }
+
+    /** Loads the class roster only when the ranking screen needs to turn person IDs into names. */
+    fun loadClassMembersForRanking(onError: (String) -> Unit, onUpdated: () -> Unit) {
+        if (!this::profile.isInitialized || !this::token.isInitialized) {
+            onError("unavailable")
+            return
+        }
+
+        val child = profile.children.getOrNull(currentProfile)
+        if (child == null) {
+            onError("unavailable")
+            return
+        }
+
+        if (classMembersNamesLoaded && classMembersNamesStudentId == child.studentId && classMembers.isNotEmpty()) {
+            onUpdated()
+            return
+        }
+
+        if (classMembersNamesRequestInFlight && classMembersNamesRequestStudentId == child.studentId) {
+            classMembersNamesWaiters += onError to onUpdated
+            return
+        }
+
+        if (classMembersNamesRequestInFlight) {
+            classMembersNamesWaiters.toList().also { classMembersNamesWaiters.clear() }
+                .forEach { it.first("profile changed") }
+            classMembersNamesRequestGeneration++
+        }
+
+        classMembersNamesWaiters += onError to onUpdated
+        classMembersNamesRequestStudentId = child.studentId
+        val requestGeneration = ++classMembersNamesRequestGeneration
+
+        classMembersNamesRequestInFlight = true
+        fun finishWithError(message: String) {
+            if (requestGeneration != classMembersNamesRequestGeneration) return
+            classMembersNamesRequestInFlight = false
+            classMembersNamesRequestStudentId = null
+            classMembersNamesWaiters.toList().also { classMembersNamesWaiters.clear() }
+                .forEach { it.first(message) }
+        }
+        fun finishWithUpdate() {
+            if (requestGeneration != classMembersNamesRequestGeneration) return
+            classMembersNamesRequestInFlight = false
+            classMembersNamesRequestStudentId = null
+            classMembersNamesStudentId = child.studentId
+            classMembersNamesLoaded = classMembers.isNotEmpty()
+            classMembersNamesWaiters.toList().also { classMembersNamesWaiters.clear() }
+                .forEach { it.second() }
+        }
+
+        dSchoolApi.classMembers(token, child.studentId, child.classUnitId)
+            .baseEnqueue({ errorBody, httpCode, className ->
+                if (httpCode == 401 || httpCode == 403) {
+                    runCatching { baseErrorFunction(errorBody, httpCode, className) }
+                } else {
+                    errorBody.close()
+                }
+                finishWithError("HTTP $httpCode")
+            }, { throwable, _ ->
+                finishWithError(throwable.message ?: "connection")
+            }) { members ->
+                if (requestGeneration != classMembersNamesRequestGeneration ||
+                    profile.children.getOrNull(currentProfile)?.studentId != child.studentId
+                ) return@baseEnqueue
+                classMembers = members
+                hasClassMembers = true
+                if (members.any { it.personId.isNullOrBlank() && it.studentId != null }) {
+                    updateCustomClassMembers { finishWithUpdate() }
+                } else finishWithUpdate()
+            }
     }
 
     fun updateCustomClassMembers(onUpdated: () -> Unit) {

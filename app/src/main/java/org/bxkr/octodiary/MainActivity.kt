@@ -108,6 +108,10 @@ import org.bxkr.octodiary.screens.navsections.daybook.DayChooser
 import org.bxkr.octodiary.screens.navsections.profile.avatarTriggerLive
 import org.bxkr.octodiary.ui.theme.CustomColorScheme
 import org.bxkr.octodiary.ui.theme.OctoDiaryTheme
+import org.bxkr.octodiary.ui.theme.AppearanceSettings
+import org.bxkr.octodiary.ui.theme.appearanceSettingsLive
+import org.bxkr.octodiary.ui.theme.followSystemThemeLive
+import org.bxkr.octodiary.ui.theme.readAppearanceSettings
 import java.io.ByteArrayOutputStream
 import java.io.File
 
@@ -214,11 +218,16 @@ class MainActivity : FragmentActivity() {
             picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
         enableEdgeToEdge()
+        colorSchemeLive.value = mainPrefs.get("theme") ?: -1
+        followSystemThemeLive.value = mainPrefs.get<Boolean>("follow_system_theme") ?: true
+        darkThemeLive.value = mainPrefs.get<Boolean>("is_dark_theme") ?: false
+        appearanceSettingsLive.value = readAppearanceSettings(this)
         setContent {
-            colorSchemeLive.value = mainPrefs.get("theme") ?: -1
-            darkThemeLive.value = mainPrefs.get("is_dark_theme") ?: isSystemInDarkTheme()
             val colorScheme by colorSchemeLive.observeAsState(-1)
-            val darkTheme by darkThemeLive.observeAsState(isSystemInDarkTheme())
+            val followSystemTheme by followSystemThemeLive.observeAsState(true)
+            val selectedDarkTheme by darkThemeLive.observeAsState(false)
+            val appearance by appearanceSettingsLive.observeAsState(AppearanceSettings())
+            val darkTheme = if (followSystemTheme) isSystemInDarkTheme() else selectedDarkTheme
             /**
              * When `colorScheme == -1`, it uses dynamic colors **if available**.
              * If not, it uses default (yellow).
@@ -232,7 +241,8 @@ class MainActivity : FragmentActivity() {
                     it.first,
                     colorScheme == -1,
                     currentScheme.lightColorScheme,
-                    currentScheme.darkColorScheme
+                    currentScheme.darkColorScheme,
+                    appearance
                 ) {
                     MyApp(modifier = Modifier.fillMaxSize())
                 }

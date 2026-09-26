@@ -49,6 +49,7 @@ import org.bxkr.octodiary.parseLongDate
 import org.bxkr.octodiary.screens.navsections.daybook.DayItem
 import org.bxkr.octodiary.screens.navsections.homeworks.PlannerTaskStore
 import org.bxkr.octodiary.screens.navsections.homeworks.plannerTasksLive
+import org.bxkr.octodiary.ui.theme.LocalCompactLayout
 import java.util.Date
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -56,6 +57,7 @@ import java.util.Locale
 @Composable
 fun DashboardScreen() {
     val context = LocalContext.current
+    val compactLayout = LocalCompactLayout.current
     val greeting = if (DataService.hasProfile && DataService.profile.children.isNotEmpty() && DataService.currentProfile in DataService.profile.children.indices) {
         stringResource(R.string.home_greeting, DataService.profile.children[DataService.currentProfile].firstName)
     } else {
@@ -88,11 +90,14 @@ fun DashboardScreen() {
         if (DataService.hasHomeworks) DataService.homeworks.count { !it.isDone } else 0
 
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(if (compactLayout) 8.dp else 12.dp),
         modifier = Modifier
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = if (compactLayout) 10.dp else 16.dp)
             .fillMaxHeight(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 16.dp, bottom = 24.dp)
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            top = if (compactLayout) 8.dp else 16.dp,
+            bottom = if (compactLayout) 12.dp else 24.dp
+        )
     ) {
         item {
             Card(
@@ -100,7 +105,10 @@ fun DashboardScreen() {
                 shape = MaterialTheme.shapes.extraLarge,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
             ) {
-                Column(Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(
+                    Modifier.padding(if (compactLayout) 16.dp else 22.dp),
+                    verticalArrangement = Arrangement.spacedBy(if (compactLayout) 4.dp else 8.dp)
+                ) {
                     Text(greeting, style = MaterialTheme.typography.headlineMedium)
                     Text(now.formatToHumanDay(), style = MaterialTheme.typography.titleMedium)
                     Text(

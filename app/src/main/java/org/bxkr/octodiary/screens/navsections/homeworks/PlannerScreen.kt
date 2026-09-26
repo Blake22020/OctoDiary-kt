@@ -49,6 +49,7 @@ import com.google.gson.reflect.TypeToken
 import org.bxkr.octodiary.DataService
 import org.bxkr.octodiary.R
 import org.bxkr.octodiary.showFilterLive
+import org.bxkr.octodiary.ui.theme.LocalCompactLayout
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -90,6 +91,7 @@ object PlannerTaskStore {
 @Composable
 fun PlannerScreen() {
     val context = LocalContext.current
+    val compactLayout = LocalCompactLayout.current
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     var tasks by remember {
         mutableStateOf(PlannerTaskStore.read(context).also { plannerTasksLive.value = it })
@@ -157,14 +159,14 @@ private fun PersonalTasks(
         Card(
             Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(if (compactLayout) 10.dp else 16.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
             shape = MaterialTheme.shapes.extraLarge
         ) {
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .padding(20.dp),
+                    .padding(if (compactLayout) 14.dp else 20.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {

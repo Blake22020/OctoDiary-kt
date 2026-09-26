@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.bxkr.octodiary.R
+import org.bxkr.octodiary.ui.theme.LocalCompactLayout
 
 @Composable
 fun RankingMemberCard(
@@ -32,15 +33,16 @@ fun RankingMemberCard(
     highlighted: Boolean,
     isAnonymized: Boolean,
 ) {
+    val compact = LocalCompactLayout.current
     OutlinedCard(
-        Modifier.padding(bottom = 8.dp),
+        Modifier.padding(bottom = if (compact) 4.dp else 8.dp),
         border = if (highlighted) BorderStroke(
             width = 2.dp,
             MaterialTheme.colorScheme.secondary
         ) else CardDefaults.outlinedCardBorder()
     ) {
         Row {
-            Row(Modifier.padding(8.dp)) {
+            Row(Modifier.padding(if (compact) 5.dp else 8.dp)) {
                 Text(
                     rankPlace.toString(),
                     fontWeight = FontWeight.Bold,

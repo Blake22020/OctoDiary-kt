@@ -10,14 +10,19 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import org.bxkr.octodiary.ui.theme.yellow.DarkColorScheme
 import org.bxkr.octodiary.ui.theme.yellow.LightColorScheme
@@ -53,6 +58,7 @@ fun OctoDiaryTheme(
     dynamicColor: Boolean = true,
     lightScheme: ColorScheme = LightColorScheme,
     darkScheme: ColorScheme = DarkColorScheme,
+    appearance: AppearanceSettings = AppearanceSettings(),
     portable: Boolean = false,
     content: @Composable () -> Unit,
 ) {
@@ -74,9 +80,23 @@ fun OctoDiaryTheme(
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    val typography = remember(appearance) { Typography.withAppearance(appearance) }
+    val cornerScale = appearance.cornerScale.coerceIn(0f, 2f)
+    val shapes = remember(cornerScale) {
+        Shapes(
+            extraSmall = RoundedCornerShape(4.dp * cornerScale),
+            small = RoundedCornerShape(8.dp * cornerScale),
+            medium = RoundedCornerShape(12.dp * cornerScale),
+            large = RoundedCornerShape(18.dp * cornerScale),
+            extraLarge = RoundedCornerShape(28.dp * cornerScale)
+        )
+    }
+    CompositionLocalProvider(LocalCompactLayout provides appearance.compactLayout) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = typography,
+            shapes = shapes,
+            content = content
+        )
+    }
 }

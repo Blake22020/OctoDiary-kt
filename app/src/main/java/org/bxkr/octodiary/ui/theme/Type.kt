@@ -32,3 +32,33 @@ val Typography = Typography(
     )
     */
 )
+
+fun Typography.withAppearance(settings: AppearanceSettings): Typography {
+    val family = settings.fontFamily()
+    fun adjust(style: TextStyle) = style.copy(
+        fontFamily = family,
+        fontSize = style.fontSize * settings.textScale,
+        lineHeight = style.lineHeight * settings.lineHeightScale,
+        letterSpacing = style.letterSpacing * settings.letterSpacingScale,
+        fontWeight = FontWeight((style.fontWeight ?: FontWeight.Normal).weight
+            .plus(settings.fontWeightBoost).coerceIn(100, 900))
+    )
+
+    return copy(
+        displayLarge = adjust(displayLarge),
+        displayMedium = adjust(displayMedium),
+        displaySmall = adjust(displaySmall),
+        headlineLarge = adjust(headlineLarge),
+        headlineMedium = adjust(headlineMedium),
+        headlineSmall = adjust(headlineSmall),
+        titleLarge = adjust(titleLarge),
+        titleMedium = adjust(titleMedium),
+        titleSmall = adjust(titleSmall),
+        bodyLarge = adjust(bodyLarge),
+        bodyMedium = adjust(bodyMedium),
+        bodySmall = adjust(bodySmall),
+        labelLarge = adjust(labelLarge),
+        labelMedium = adjust(labelMedium),
+        labelSmall = adjust(labelSmall)
+    )
+}

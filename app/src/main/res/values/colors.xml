@@ -5,6 +5,6 @@
     <color name="mosru_primary">#CC2222</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="ic_launcher_background">@color/white</color>
-    <color name="ic_launcher_foreground">@color/black</color>
+    <color name="ic_launcher_background">#26344D</color>
+    <color name="ic_launcher_foreground">#FFFFFFFF</color>
 </resources>

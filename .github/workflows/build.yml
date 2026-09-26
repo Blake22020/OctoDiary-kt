@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - fix/initial-sync-loading
+      - feat/octoplan-student-fork
 
 jobs:
   build:
@@ -29,5 +30,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: OctoDiary-debug
+          name: OctoPlan-v0.1.0-debug
           path: app/build/outputs/apk/debug/*.apk

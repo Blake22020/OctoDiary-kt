@@ -225,7 +225,7 @@ class MainActivity : FragmentActivity() {
              **/
             AnimatedContent(targetState = darkTheme to colorScheme, label = "theme_anim") {
                 val currentScheme = when {
-                    it.second == -1 -> CustomColorScheme.Yellow
+                    it.second == -1 -> CustomColorScheme.Blue
                     else -> CustomColorScheme.values()[it.second]
                 }
                 OctoDiaryTheme(

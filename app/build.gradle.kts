@@ -20,11 +20,12 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "org.bxkr.octodiary"
+        // A separate id lets OctoPlan be installed beside the upstream OctoDiary app.
+        applicationId = "app.octoplan.student"
         minSdk = 26
         targetSdk = 36
-        versionCode = 38
-        versionName = "2.1.11"
+        versionCode = 1
+        versionName = "0.1.0"
         archivesName = gitLatestCommit
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

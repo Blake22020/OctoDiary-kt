@@ -159,6 +159,12 @@ private fun Card() {
                     )
                 }
             }
+            Text(
+                stringResource(R.string.about_fork),
+                Modifier.padding(start = 24.dp, end = 24.dp, bottom = 16.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
     AnimatedVisibility(isChangelogDialogShown) {

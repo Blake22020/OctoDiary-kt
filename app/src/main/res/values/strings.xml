@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name" translatable="false">OctoDiary</string>
+    <string name="app_name" translatable="false">OctoPlan</string>
     <string name="hello_world">Hello, World!</string>
     <string name="log_in">Log In</string>
     <string name="password">Password</string>
@@ -20,7 +20,7 @@
     <string name="placeholder_day" translatable="false">01 January, monday</string>
     <string name="placeholder_lesson_name" translatable="false">Maths</string>
     <string name="placeholder_lesson_time" translatable="false">08:30 - 09:10</string>
-    <string name="diary">Diary</string>
+    <string name="diary">Schedule</string>
     <string name="profile">Profile</string>
     <string name="settings">Settings</string>
     <string name="placeholder_profile_name" translatable="false">Jacque Fresco</string>
@@ -105,7 +105,7 @@
     <string name="show_rating_images_info">Pictures used instead of student avatars</string>
     <string name="show_rating_images_name">Avatars in rating</string>
     <string name="screen_when_opening">Screen when opening</string>
-    <string name="dashboard">Dashboard</string>
+    <string name="dashboard">Home</string>
     <string name="user_feed_data_key" translatable="false">user_feed_data</string>
     <string name="placeholder_mark_type_and_date" translatable="false">WRK, Oct 20</string>
     <string name="mark_type_and_date" translatable="false">%s, %s</string>
@@ -202,7 +202,7 @@
     <string name="conference">Conference</string>
     <string name="unsupported_url">Unsupported link</string>
     <string name="url_copied_to_clipboard">URL was copied to clipboard</string>
-    <string name="homeworks">Homework</string>
+    <string name="homeworks">Planner</string>
     <string name="to">to</string>
     <string name="schedule_today">Schedule today</string>
     <string name="schedule_for">Schedule for %s</string>
@@ -408,4 +408,31 @@
     <string name="week_starts_always_on_monday">Week always starts on Monday</string>
     <string name="week_starts_always_on_monday_desc">for some locales</string>
     <string name="log_in_by_password">Log in by password</string>
+    <string name="planner_tab_personal">My tasks</string>
+    <string name="planner_tab_diary">From diary</string>
+    <string name="planner_add_task">Add task</string>
+    <string name="planner_task_title_hint">What do you need to do?</string>
+    <string name="planner_subject_hint">Subject or category (optional)</string>
+    <string name="planner_due_date_hint">Due date, YYYY-MM-DD</string>
+    <string name="planner_save">Save</string>
+    <string name="planner_cancel">Cancel</string>
+    <string name="planner_empty_title">Your plan starts here</string>
+    <string name="planner_empty_message">Add a personal task. It stays on this device and is not sent to the school service.</string>
+    <string name="planner_due_label">Due %1$s</string>
+    <string name="planner_remaining_count">%1$d left</string>
+    <string name="planner_invalid_due_date">Enter a valid date as YYYY-MM-DD</string>
+    <string name="planner_no_homeworks">Diary assignments are unavailable right now. Your personal tasks still work offline.</string>
+    <string name="planner_no_assignments">No assignments in the selected diary period.</string>
+    <string name="home_greeting">Hi, %1$s</string>
+    <string name="home_greeting_generic">Your school day at a glance</string>
+    <string name="home_school_day">Schedule, tasks and progress in one place</string>
+    <string name="home_open_tasks">Open tasks</string>
+    <string name="home_grade_average">Average by subjects</string>
+    <string name="home_next_lesson">Next lesson</string>
+    <string name="home_no_next_lesson">No upcoming lessons found</string>
+    <string name="home_upcoming_homework">Upcoming assignments</string>
+    <string name="home_no_upcoming_homework">No unfinished assignments found</string>
+    <string name="home_focus_subject">Needs attention: %1$s (%2$s)</string>
+    <string name="home_view_plan">Open plan</string>
+    <string name="about_fork">Independent OctoDiary fork. School data is provided by the connected school service.</string>
 </resources>

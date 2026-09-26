@@ -125,6 +125,7 @@ fun PlannerScreen() {
         if (selectedTab == 0) {
             PersonalTasks(
                 tasks = tasks,
+                compactLayout = compactLayout,
                 onAdd = { showAddDialog = true },
                 onToggle = { task, completed ->
                     saveTasks(tasks.map { if (it.id == task.id) it.copy(completed = completed) else it })
@@ -150,6 +151,7 @@ fun PlannerScreen() {
 @Composable
 private fun PersonalTasks(
     tasks: List<PlannerTask>,
+    compactLayout: Boolean,
     onAdd: () -> Unit,
     onToggle: (PlannerTask, Boolean) -> Unit,
     onDelete: (PlannerTask) -> Unit

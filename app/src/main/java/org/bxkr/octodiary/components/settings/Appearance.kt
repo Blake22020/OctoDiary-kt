@@ -32,12 +32,12 @@ import org.bxkr.octodiary.colorSchemeLive
 import org.bxkr.octodiary.components.SwitchPreference
 import org.bxkr.octodiary.components.ThemeCard
 import org.bxkr.octodiary.darkThemeLive
-import org.bxkr.octodiary.followSystemThemeLive
 import org.bxkr.octodiary.mainPrefs
 import org.bxkr.octodiary.save
 import org.bxkr.octodiary.ui.theme.AppearanceSettings
 import org.bxkr.octodiary.ui.theme.CustomColorScheme
 import org.bxkr.octodiary.ui.theme.appearanceSettingsLive
+import org.bxkr.octodiary.ui.theme.followSystemThemeLive
 import org.bxkr.octodiary.ui.theme.save
 
 @Composable

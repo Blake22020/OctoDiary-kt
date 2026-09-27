@@ -95,7 +95,6 @@ import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import org.bxkr.octodiary.components.DebugMenu
-import org.bxkr.octodiary.components.MigrationDialog
 import org.bxkr.octodiary.components.ProfileChooser
 import org.bxkr.octodiary.components.SettingsDialog
 import org.bxkr.octodiary.components.TokenLogin
@@ -277,23 +276,13 @@ class MainActivity : FragmentActivity() {
         val showFilter = showFilterLive.observeAsState(false)
         val launchUrl = launchUrlLive.observeAsState()
         val webViewDialog by webViewDialogLive.observeAsState()
-        if (authPrefs.get<String>("access_token") != null) {
-            if ((mainPrefs.get<Int>("version") ?: 25) <= 25) {
-                modalDialogCloseListenerLive.value = {
-                    mainPrefs.save("version" to BuildConfig.VERSION_CODE)
-                    logOut("Migration from version 25")
-                }
-                modalDialogContentLive.value = {
-                    MigrationDialog { modalDialogCloseListenerLive.value?.invoke() }
-                }
-                modalDialogStateLive.value = true
-            } else if ((mainPrefs.get<Int>("version") ?: 31) <= 31) {
-                logOut("Migration from version 31")
-            } else if (mainPrefs.get<Int>("version") != BuildConfig.VERSION_CODE) {
+        LaunchedEffect(Unit) {
+            // This fork has its own application ID and keeps its login tokens across upgrades.
+            // Update the stored version once without treating an ordinary settings recomposition
+            // as an upstream migration that requires logging the user out.
+            if (mainPrefs.get<Int>("version") != BuildConfig.VERSION_CODE) {
                 mainPrefs.save("version" to BuildConfig.VERSION_CODE)
             }
-        } else if (mainPrefs.get<Int>("version") != BuildConfig.VERSION_CODE) {
-            mainPrefs.save("version" to BuildConfig.VERSION_CODE)
         }
 
         if (launchUrl.value != null) {

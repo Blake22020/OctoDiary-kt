@@ -1,6 +1,12 @@
 package org.bxkr.octodiary.components.settings
 
 import android.os.Build
+import android.content.Context
+import android.net.Uri
+import android.provider.OpenableColumns
+import android.graphics.Typeface as AndroidTypeface
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,11 +23,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +47,11 @@ import org.bxkr.octodiary.ui.theme.CustomColorScheme
 import org.bxkr.octodiary.ui.theme.appearanceSettingsLive
 import org.bxkr.octodiary.ui.theme.followSystemThemeLive
 import org.bxkr.octodiary.ui.theme.save
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
 
 @Composable
 fun Appearance() {
@@ -50,6 +63,29 @@ fun Appearance() {
     val appearance by appearanceSettingsLive.observeAsState(AppearanceSettings())
     val compactState = remember { mutableStateOf(appearance.compactLayout) }
     var fontMenuExpanded by remember { mutableStateOf(false) }
+    var fontImporting by remember { mutableStateOf(false) }
+    var fontImportFailed by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    val fontPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) scope.launch {
+            fontImporting = true
+            fontImportFailed = false
+            val importedFont = runCatching { withContext(Dispatchers.IO) { importCustomFont(context, uri) } }
+            importedFont.onSuccess { (fontFile, displayName) ->
+                val updated = (appearanceSettingsLive.value ?: appearance).copy(
+                    fontFamily = 4,
+                    customFontPath = fontFile.absolutePath,
+                    customFontName = displayName
+                )
+                appearanceSettingsLive.value = updated
+                updated.save(context)
+            }.onFailure {
+                fontImportFailed = true
+            }
+            fontImporting = false
+        }
+    }
 
     fun applyAppearance(updated: AppearanceSettings, persist: Boolean = true) {
         appearanceSettingsLive.value = updated
@@ -136,17 +172,50 @@ fun Appearance() {
                             R.string.appearance_font_system,
                             R.string.appearance_font_serif,
                             R.string.appearance_font_mono,
-                            R.string.appearance_font_cursive
+                            R.string.appearance_font_cursive,
+                            R.string.appearance_font_custom
                         ).forEachIndexed { index, title ->
                             DropdownMenuItem(
                                 text = { Text(stringResource(title)) },
                                 onClick = {
                                     fontMenuExpanded = false
-                                    applyAppearance(appearance.copy(fontFamily = index))
+                                    if (index == 4 && appearance.customFontPath.isNullOrBlank()) {
+                                        fontPicker.launch(arrayOf("*/*"))
+                                    } else applyAppearance(appearance.copy(fontFamily = index))
                                 }
                             )
                         }
                     }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedButton(
+                        onClick = { fontPicker.launch(arrayOf("*/*")) },
+                        enabled = !fontImporting
+                    ) {
+                        Text(
+                            stringResource(
+                                if (appearance.customFontName.isNullOrBlank()) R.string.appearance_font_upload
+                                else R.string.appearance_font_change
+                            )
+                        )
+                    }
+                    if (!appearance.customFontPath.isNullOrBlank()) {
+                        TextButton(onClick = {
+                            applyAppearance(appearance.copy(fontFamily = 0, customFontPath = null, customFontName = null))
+                        }) { Text(stringResource(R.string.appearance_font_remove)) }
+                    }
+                }
+                Text(
+                    stringResource(R.string.appearance_font_formats),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (fontImporting) Text(stringResource(R.string.appearance_font_loading))
+                if (fontImportFailed) {
+                    Text(stringResource(R.string.appearance_font_error), color = MaterialTheme.colorScheme.error)
+                }
+                appearance.customFontName?.let { fontName ->
+                    Text(fontName, maxLines = 1, style = MaterialTheme.typography.bodySmall)
                 }
 
                 AppearanceSlider(
@@ -286,6 +355,50 @@ private fun fontFamilyTitle(index: Int) = stringResource(
         1 -> R.string.appearance_font_serif
         2 -> R.string.appearance_font_mono
         3 -> R.string.appearance_font_cursive
+        4 -> R.string.appearance_font_custom
         else -> R.string.appearance_font_system
     }
 )
+
+private fun importCustomFont(context: Context, uri: Uri): Pair<File, String> {
+    val displayName = context.contentResolver.query(
+        uri,
+        arrayOf(OpenableColumns.DISPLAY_NAME),
+        null,
+        null,
+        null
+    )?.use { cursor ->
+        if (cursor.moveToFirst()) cursor.getString(0) else null
+    } ?: "custom-font.ttf"
+    val extension = displayName.substringAfterLast('.', "").lowercase()
+    require(extension == "ttf" || extension == "otf") { "Unsupported font format" }
+
+    val directory = File(context.filesDir, "custom-fonts").apply { mkdirs() }
+    val temporaryFile = File(directory, "font-import.tmp")
+    val fontFile = File(directory, "user-font.$extension")
+    try {
+        val input = requireNotNull(context.contentResolver.openInputStream(uri)) { "Cannot open font file" }
+        input.use { source ->
+            FileOutputStream(temporaryFile).use { destination ->
+                val buffer = ByteArray(8192)
+                var totalBytes = 0L
+                while (true) {
+                    val count = source.read(buffer)
+                    if (count < 0) break
+                    totalBytes += count
+                    require(totalBytes <= 30L * 1024 * 1024) { "Font file is too large" }
+                    destination.write(buffer, 0, count)
+                }
+                require(totalBytes > 0) { "Font file is empty" }
+            }
+        }
+        AndroidTypeface.createFromFile(temporaryFile.absolutePath)
+        if (fontFile.exists()) fontFile.delete()
+        check(temporaryFile.renameTo(fontFile)) { "Cannot save font file" }
+        directory.listFiles()?.filter { it.name.startsWith("user-font.") && it != fontFile }?.forEach { it.delete() }
+        return fontFile to displayName.take(100)
+    } catch (error: Exception) {
+        temporaryFile.delete()
+        throw error
+    }
+}

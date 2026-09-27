@@ -235,6 +235,13 @@
     <string name="appearance_font_serif">С засечками</string>
     <string name="appearance_font_mono">Моноширинный</string>
     <string name="appearance_font_cursive">Рукописный</string>
+    <string name="appearance_font_custom">Свой шрифт</string>
+    <string name="appearance_font_upload">Загрузить файл шрифта</string>
+    <string name="appearance_font_change">Выбрать другой файл</string>
+    <string name="appearance_font_remove">Убрать свой шрифт</string>
+    <string name="appearance_font_formats">Файлы TTF и OTF, до 30 МБ</string>
+    <string name="appearance_font_loading">Загружаем шрифт…</string>
+    <string name="appearance_font_error">Не удалось загрузить этот шрифт. Выберите корректный файл TTF или OTF.</string>
     <string name="appearance_text_size">Размер текста</string>
     <string name="appearance_line_height">Межстрочный интервал</string>
     <string name="appearance_letter_spacing">Расстояние между буквами</string>

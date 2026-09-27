@@ -290,6 +290,13 @@
     <string name="appearance_font_serif">Serif</string>
     <string name="appearance_font_mono">Monospaced</string>
     <string name="appearance_font_cursive">Cursive</string>
+    <string name="appearance_font_custom">Custom font</string>
+    <string name="appearance_font_upload">Load font file</string>
+    <string name="appearance_font_change">Choose another file</string>
+    <string name="appearance_font_remove">Remove custom font</string>
+    <string name="appearance_font_formats">TTF and OTF files, up to 30 MB</string>
+    <string name="appearance_font_loading">Loading font…</string>
+    <string name="appearance_font_error">Could not load this font. Choose a valid TTF or OTF file.</string>
     <string name="appearance_text_size">Text size</string>
     <string name="appearance_line_height">Line height</string>
     <string name="appearance_letter_spacing">Letter spacing</string>

@@ -19,6 +19,6 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("org.bxkr.octodiary", appContext.packageName)
+        assertEquals("app.octoplan.student.debug", appContext.packageName)
     }
 }

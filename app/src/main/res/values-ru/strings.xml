@@ -409,5 +409,5 @@
     <string name="ranking_names_retry">Загрузить имена ещё раз</string>
     <string name="ranking_search">Поиск по имени или ID ученика</string>
     <string name="home_view_plan">Открыть план</string>
-    <string name="about_fork">Независимый форк OctoDiary. Данные предоставляет подключённая школьная система.</string>
+    <string name="about_fork">OctoPlan — независимый форк OctoDiary. Данные предоставляет подключённая школьная система.</string>
 </resources>

@@ -468,5 +468,5 @@
     <string name="ranking_names_retry">Retry names</string>
     <string name="ranking_search">Search by name or student ID</string>
     <string name="home_view_plan">Open plan</string>
-    <string name="about_fork">Independent OctoDiary fork. School data is provided by the connected school service.</string>
+    <string name="about_fork">OctoPlan is an independent OctoDiary fork. School data comes from the connected school service.</string>
 </resources>

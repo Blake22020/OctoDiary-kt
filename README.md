@@ -1,25 +1,52 @@
 # OctoPlan
 
-OctoPlan is an independent Android fork of [OctoDiary](https://github.com/OctoDiary/OctoDiary-kt), focused on combining the school diary with a personal study planner.
+**Самостоятельный Android-дневник и планировщик учёбы на основе открытого проекта OctoDiary.** Проект развивается Blake22020 и предназначен для личного использования; это неофициальное приложение, не связанное с разработчиками МЭШ или «Моей школы».
 
-## What makes this fork different
+[English version](README.en.md) · [Скачать APK](#установка-apk) · [Сообщить о проблеме](https://github.com/Blake22020/OctoPlan/issues)
 
-- A new home screen with the next lesson, unfinished school assignments, a personal-task count, and a compact grade overview.
-- A planner with two lists: assignments from the connected diary and personal tasks stored locally on the device.
-- Personal tasks work offline and are not uploaded to the school service.
-- A separate Android application ID, name, launcher icon, theme defaults, and build artifact, so OctoPlan can be installed next to the original app.
-- Existing diary functions remain available: schedule, marks, profile, school data, and the status widget.
+![Сборка APK](https://github.com/Blake22020/OctoPlan/actions/workflows/build.yml/badge.svg?branch=feat/octoplan-student-fork)
 
-The app reads school information from the selected school service. Availability depends on that service and region; unsupported sections should be reported as unavailable instead of being shown as empty data.
+## Возможности
 
-## Build
+- **Дневник:** расписание, оценки, посещаемость, домашние задания, сведения о школе и доступные в регионе балансы питания.
+- **Главный экран:** ближайший урок, незавершённые задания, личные задачи и краткая сводка оценок.
+- **Планировщик:** личные задачи с предметом и сроком хранятся на устройстве и доступны без интернета; задания дневника показываются отдельно.
+- **Рейтинг класса:** имена одноклассников загружаются из данных школьного сервиса, когда они доступны; поиск работает по имени и ID, ID можно раскрыть отдельно.
+- **Оформление:** светлая и тёмная темы, палитры, настройки типографики и плотности интерфейса; можно импортировать собственный шрифт TTF или OTF из файла.
+- **Виджет:** быстрый просмотр школьного расписания на главном экране Android.
+
+Данные дневника приложение получает от подключённой школьной системы. Набор разделов и ответы API зависят от региона, профиля и доступности самих сервисов; приложение не может гарантировать работу стороннего API. Личные задачи планировщика не отправляются в школьный сервис.
+
+## Установка APK
+
+1. Откройте [последнюю сборку GitHub Actions](https://github.com/Blake22020/OctoPlan/actions/workflows/build.yml?query=branch%3Afeat%2Foctoplan-student-fork).
+2. Выберите успешно завершённую сборку и скачайте артефакт `OctoPlan-debug` внизу страницы.
+3. Распакуйте ZIP-архив и установите APK на Android 8.0 или новее.
+
+Это отладочная сборка для тестирования. В ней используется отдельный идентификатор `app.octoplan.student.debug`, поэтому её можно установить рядом с оригинальным OctoDiary. APK из GitHub Actions подписан тестовым ключом Android; перед установкой проверьте, что скачали сборку именно из этого репозитория.
+
+## Сборка из исходников
+
+Требуются JDK 17 и Android SDK с Android 36 Platform. Из корня проекта выполните:
 
 ```bash
-./gradlew assembleDebug
+./gradlew testDebugUnitTest assembleDebug
 ```
 
-The installable debug APK is written to `app/build/outputs/apk/debug/`. Pushes to `feat/octoplan-student-fork` build and upload an `OctoPlan-v0.1.0-debug` artifact through GitHub Actions.
+APK появится в `app/build/outputs/apk/debug/`. Для тестов на устройстве дополнительно доступна задача `connectedDebugAndroidTest`.
 
-## Upstream and license
+Инструкции по структуре проекта, проверкам и выпуску сборок находятся в [руководстве разработчика](docs/DEVELOPMENT.md). Сведения об используемых школьных API — в [описании API](api.md).
 
-This project is derived from OctoDiary. The upstream MIT license and copyright notice are retained in [`LICENSE`](LICENSE). OctoPlan changes are maintained in this fork; upstream developers and contributors remain credited in the app.
+## Совместимость
+
+- Android 8.0 (API 26) и новее.
+- Основные школьные сервисы: МЭШ Москвы и «Моя школа» Московской области. Поддержка отдельных методов может отличаться.
+- Основной Android application ID: `app.octoplan.student`; у debug-сборки к нему добавляется суффикс `.debug`.
+
+## Участие в разработке
+
+Баг-репорты и предложения можно оставить в [Issues](https://github.com/Blake22020/OctoPlan/issues). Перед отправкой изменений ознакомьтесь с [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Происхождение и лицензия
+
+OctoPlan основан на [OctoDiary-kt](https://github.com/OctoDiary/OctoDiary-kt). Вклад и авторские права исходного проекта сохранены; исходный код распространяется на условиях MIT, см. [`LICENSE`](LICENSE). OctoPlan — независимый форк Blake22020, а не официальный продукт OctoDiary, МЭШ или «Моей школы».

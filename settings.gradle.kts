@@ -13,6 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "OctoDiary"
+rootProject.name = "OctoPlan"
 include(":app")
- 
